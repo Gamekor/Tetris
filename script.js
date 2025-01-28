@@ -93,22 +93,60 @@ function startGame() {
 }
 
 function dropTetromino() {
-    moveTetromino(0, 1);
+    eraseTetromino();
+    position.y++; // Сначала перемещаем фигуру вниз
+
+    // Если фигура не может дальше двигаться вниз:
     if (!isValidPosition()) {
-        currentTetromino.forEach((row, y) => {
-            row.forEach((value, x) => {
-                if (value) {
-                    cells[position.y + y][position.x + x].classList.add('active');
-                }
-            });
-        });
-        startGame();
+        position.y--; // Возвращаем на прежнее место
+        drawTetromino(); // Фиксируем фигуру на игровом поле
+        fixTetromino(); // Закрепляем фигуру и проверяем линии
+        startGame(); // Генерируем новую фигуру
+        return; // Завершаем текущий шаг
     }
-    if (position.y === 0) {
-        gameOver = true;
-        alert('Игра окончена!');
+
+    drawTetromino(); // Если движение вниз возможно, рисуем фигуру
+}
+
+function fixTetromino() {
+    currentTetromino.forEach((row, y) => {
+        row.forEach((value, x) => {
+            if (value && cells[position.y + y] && cells[position.y + y][position.x + x]) {
+                cells[position.y + y][position.x + x].classList.add('fixed'); // Закрепляем клетку
+            }
+        });
+    });
+
+    // Проверка на заполненные линии
+    for (let y = rows - 1; y >= 0; y--) {
+        if (cells[y].every(cell => cell.classList.contains('fixed'))) {
+            cells[y].forEach(cell => cell.classList.remove('fixed', 'active')); // Удаляем заполненную линию
+            cells.splice(y, 1); // Убираем линию из массива
+            const newRow = Array.from({ length: cols }, () => {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                grid.prepend(cell); // Добавляем новую пустую строку сверху
+                return cell;
+            });
+            cells.unshift(newRow); // Добавляем строку в массив
+        }
     }
 }
+
+// Обновление проверки конца игры
+function startGame() {
+    currentTetromino = tetrominoes[Math.floor(Math.random() * tetrominoes.length)];
+    position = { x: 3, y: 0 };
+
+    if (!isValidPosition()) {
+        alert('Игра окончена!');
+        gameOver = true;
+        return;
+    }
+
+    drawTetromino();
+}
+
 
 // Обработчики кнопок
 document.getElementById('left').addEventListener('click', () => moveTetromino(-1, 0));
